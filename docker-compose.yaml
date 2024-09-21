@@ -1,0 +1,147 @@
+version: '3'
+x-minio-common: &minio-common
+  image: quay.io/minio/minio
+  container_name: minio-container
+  hostname: minio
+  ports:
+    - "9000:9000"
+    - "9001:9001"
+  command: server --console-address ":9001" /data
+  env_file: ./minio/.env
+
+# x-airflow-common: &airflow-common
+#   image: ${AIRFLOW_IMAGE_NAME:-apache-airflow:customize}
+#   # build: .
+#   volumes:
+#     - ./dags:/opt/airflow/dags
+#     - ./logs:/opt/airflow/logs
+#     # - ./config:/opt/airflow/config
+#     - ./plugins:/opt/airflow/plugins
+#     - ./stock:/opt/airflow/stock
+#     - ./spark/app:/spark/app # Spark scripts folder (Must be the same path in airflow and Spark Cluster)
+#     - ./spark/resources:/spark/resources #Resources folder (Must be the same path in airflow and Spark Cluster)
+#   user: "${AIRFLOW_UID}:0"
+#   env_file:
+#     - .env
+
+# x-depends-on: &depends-on
+#   depends_on:
+#     postgres:
+#       condition: service_healthy
+#     airflow-init:
+#       condition: service_completed_successfully
+
+services:
+  # postgres:
+  #   image: postgres:13
+  #   container_name: postgres
+  #   env_file:
+  #     - .env
+  #   healthcheck:
+  #     test: ["CMD", "pg_isready", "-U", "airflow"]
+  #     interval: 5s
+  #     retries: 5
+  #   ports:
+  #     - "5434:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+
+  minio:
+    <<: *minio-common
+    hostname: minio
+    volumes:
+      - .docker/minio:/data
+    env_file:
+      - .env
+
+  # selenium:
+  #   image: selenium/standalone-chrome
+  #   container_name: selenium-container
+  #   hostname: selenium
+  #   ports:
+  #     - "4444:4444"
+
+  # airflow-webserver:
+  #   <<: [*airflow-common, *depends-on]
+  #   container_name: airflow-webserver
+  #   command: webserver
+  #   ports:
+  #     - "8080:8080"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+  #     interval: 30s
+  #     timeout: 30s
+  #     retries: 5
+  #   restart: always
+
+  # airflow-scheduler:
+  #   <<: [*airflow-common, *depends-on]
+  #   container_name: airflow-scheduler
+  #   command: scheduler
+  #   restart: on-failure
+  #   ports:
+  #     - "8793:8793"
+
+  # airflow-init:
+  #   <<: *airflow-common
+  #   container_name: airflow-init
+  #   entrypoint: /bin/bash
+  #   command:
+  #     - -c
+  #     - |
+  #       mkdir -p /sources/logs /sources/dags /sources/plugins
+  #       chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
+  #       exec /entrypoint airflow version
+    
+  # spark:
+  #   image: bitnami/spark:3.3
+  #   # image: spark:3.5.0-scala2.12-java11-python3-ubuntu
+  #   container_name: spark
+  #   user: root # Run container as root container: https://docs.bitnami.com/tutorials/work-with-non-root-containers/
+  #   hostname: spark
+  #   environment:
+  #     - SPARK_MODE=master
+  #     - SPARK_MASTER_HOST=spark
+  #     - SPARK_RPC_AUTHENTICATION_ENABLED=no
+  #     - SPARK_RPC_ENCRYPTION_ENABLED=no
+  #     - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+  #     - SPARK_SSL_ENABLED=no
+  #   volumes:
+  #     - ./spark/app:/spark/app # Spark scripts folder (Must be the same path in airflow and Spark Cluster)
+  #     - ./spark/resources:/spark/resources #Resources folder (Must be the same path in airflow and Spark Cluster)
+  #   ports:
+  #     - "8181:8080"
+  #     - "7077:7077"
+  # spark-worker:
+  #   image: bitnami/spark:3.3
+  #   # image: spark:3.5.0-scala2.12-java11-python3-ubuntu    
+  #   container_name: spark-worker-1
+  #   hostname: spark-worker-1
+  #   ports:
+  #     - "8182:8081"    # Worker Web UI port
+  #   environment:
+  #     - SPARK_MODE=worker
+  #     - SPARK_MASTER_URL=spark://spark:7077
+  #     - SPARK_WORKER_MEMORY=1G
+  #     - SPARK_LOG_LEVEL=WARN
+  #   depends_on:
+  #     - spark
+
+  # spark-worker-2:
+  #   image: bitnami/spark:3.3    
+  #   # image: spark:3.5.0-scala2.12-java11-python3-ubuntu
+  #   container_name: spark-worker-2
+  #   hostname: spark-worker-2
+  #   ports:
+  #     - "8183:8081"    # Worker Web UI port (map to a different external port)
+  #   environment:
+  #     - SPARK_MODE=worker
+  #     - SPARK_MASTER_URL=spark://spark:7077
+  #     - SPARK_WORKER_MEMORY=1G
+  #     - SPARK_LOG_LEVEL=WARN
+  #   depends_on:
+  #     - spark
+
+volumes:
+  postgres_data:
+  minio: {}
