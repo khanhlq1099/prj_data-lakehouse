@@ -9,7 +9,7 @@ default_args = {
 }
 
 with DAG(
-    dag_id='minio_connection_dag',
+    dag_id='Minio_connection_dag',
     start_date=datetime(2024,1,1),
     schedule_interval='@once',
     default_args=default_args,

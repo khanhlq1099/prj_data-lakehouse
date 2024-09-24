@@ -18,7 +18,7 @@ import pandas as pd
 def extract_stock_data(period_type:PERIOD_TYPE,extract: Optional[date] = None,
                        from_date: Optional[date] = None, to_date: Optional[date] = None):
 
-    print(f"---Task: ETL Daily Stock Price Data---")
+    print(f"---Task: Extract Daily Stock Price Data---")
     start_time = datetime.now()
 
     symbols = "TCB,HPG,FPT,POW,VHM"
@@ -50,13 +50,13 @@ def extract_stock_data(period_type:PERIOD_TYPE,extract: Optional[date] = None,
         if df.shape[0] >=1 and df.shape[0] <= 5:
             print(df)
             # df.to_csv('utils/data.csv', index=False)
-            upload_df_to_s3(df=df,extract=from_date)
+            upload_df_to_s3(df=df,extract_date=from_date)
 
         elif df.shape[0] > 5:
             grouped_df = df.groupby('ngay')
             for key, item in grouped_df:
                 sub_df = grouped_df.get_group(key)
-                upload_df_to_s3(df=sub_df,extract=key)
+                upload_df_to_s3(df=sub_df,extract_date=key)
 
         else: print("Missing data.")
     except Exception as e:

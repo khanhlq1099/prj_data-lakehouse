@@ -14,13 +14,7 @@ RUN export JAVA_HOME
 
 USER airflow
 
-# COPY requirements.txt /requirements.txt
-
 COPY . /data-lake-house
 WORKDIR /data-lake-house
 
 RUN pip install --no-cache-dir -r requirements.txt
-
-# COPY --chown=airflow:root ./dags /opt/airflow/dags
-# RUN pip install --no-cache-dir apache-airflow-providers-apache-spark==4.2.0
-# RUN pip install delta

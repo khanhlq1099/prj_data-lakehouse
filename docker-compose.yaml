@@ -9,42 +9,53 @@ x-minio-common: &minio-common
   command: server --console-address ":9001" /data
   env_file: ./minio/.env
 
-# x-airflow-common: &airflow-common
-#   image: ${AIRFLOW_IMAGE_NAME:-apache-airflow:customize}
-#   # build: .
-#   volumes:
-#     - ./dags:/opt/airflow/dags
-#     - ./logs:/opt/airflow/logs
-#     # - ./config:/opt/airflow/config
-#     - ./plugins:/opt/airflow/plugins
-#     - ./stock:/opt/airflow/stock
-#     - ./spark/app:/spark/app # Spark scripts folder (Must be the same path in airflow and Spark Cluster)
-#     - ./spark/resources:/spark/resources #Resources folder (Must be the same path in airflow and Spark Cluster)
-#   user: "${AIRFLOW_UID}:0"
-#   env_file:
-#     - .env
+x-airflow-common: &airflow-common
+  image: apache-airflow:customize
+  # build: .
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    # - ./config:/opt/airflow/config
+    - ./plugins:/opt/airflow/plugins
+    - ./src:/opt/airflow/src
+    - ./spark/app:/spark/app # Spark scripts folder (Must be the same path in airflow and Spark Cluster)
+    - ./spark/resources:/spark/resources #Resources folder (Must be the same path in airflow and Spark Cluster)
+    # - ./dags:/data-lake-house/dags
+    # - ./logs:/data-lake-house/logs
+    # - ./config:/opt/airflow/config
+    # - ./plugins:/data-lake-house/plugins
+    # - ./src:/opt/airflow/src
+    # - ./spark/app:/opt/airflow/spark/app # Spark scripts folder (Must be the same path in airflow and Spark Cluster)
+    # - ./spark/resources:/opt/airflow/spark/resources #Resources folder (Must be the same path in airflow and Spark Cluster)
+  user: "${AIRFLOW_UID}:0"
+  env_file:
+    - .env
+  networks: 
+      - default_net
 
-# x-depends-on: &depends-on
-#   depends_on:
-#     postgres:
-#       condition: service_healthy
-#     airflow-init:
-#       condition: service_completed_successfully
+x-depends-on: &depends-on
+  depends_on:
+    postgres:
+      condition: service_healthy
+    airflow-init:
+      condition: service_completed_successfully
 
 services:
-  # postgres:
-  #   image: postgres:13
-  #   container_name: postgres
-  #   env_file:
-  #     - .env
-  #   healthcheck:
-  #     test: ["CMD", "pg_isready", "-U", "airflow"]
-  #     interval: 5s
-  #     retries: 5
-  #   ports:
-  #     - "5434:5432"
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: 
+      - default_net
 
   minio:
     <<: *minio-common
@@ -53,65 +64,79 @@ services:
       - .docker/minio:/data
     env_file:
       - .env
+    networks:
+      - default_net
 
-  # selenium:
-  #   image: selenium/standalone-chrome
-  #   container_name: selenium-container
-  #   hostname: selenium
-  #   ports:
-  #     - "4444:4444"
+  selenium:
+    image: selenium/standalone-chrome
+    container_name: selenium-container
+    hostname: selenium
+    ports:
+      - "4444:4444"
+    networks:
+      - default_net
 
-  # airflow-webserver:
-  #   <<: [*airflow-common, *depends-on]
-  #   container_name: airflow-webserver
-  #   command: webserver
-  #   ports:
-  #     - "8080:8080"
-  #   healthcheck:
-  #     test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
-  #     interval: 30s
-  #     timeout: 30s
-  #     retries: 5
-  #   restart: always
+  airflow-webserver:
+    <<: [*airflow-common, *depends-on]
+    container_name: airflow-webserver
+    command: webserver
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+    restart: always
+    networks: 
+      - default_net
 
-  # airflow-scheduler:
-  #   <<: [*airflow-common, *depends-on]
-  #   container_name: airflow-scheduler
-  #   command: scheduler
-  #   restart: on-failure
-  #   ports:
-  #     - "8793:8793"
+  airflow-scheduler:
+    <<: [*airflow-common, *depends-on]
+    container_name: airflow-scheduler
+    command: scheduler
+    restart: on-failure
+    ports:
+      - "8793:8793"
+    networks: 
+      - default_net  
 
-  # airflow-init:
-  #   <<: *airflow-common
-  #   container_name: airflow-init
-  #   entrypoint: /bin/bash
-  #   command:
-  #     - -c
-  #     - |
-  #       mkdir -p /sources/logs /sources/dags /sources/plugins
-  #       chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
-  #       exec /entrypoint airflow version
-    
-  # spark:
-  #   image: bitnami/spark:3.3
-  #   # image: spark:3.5.0-scala2.12-java11-python3-ubuntu
-  #   container_name: spark
-  #   user: root # Run container as root container: https://docs.bitnami.com/tutorials/work-with-non-root-containers/
-  #   hostname: spark
-  #   environment:
-  #     - SPARK_MODE=master
-  #     - SPARK_MASTER_HOST=spark
-  #     - SPARK_RPC_AUTHENTICATION_ENABLED=no
-  #     - SPARK_RPC_ENCRYPTION_ENABLED=no
-  #     - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-  #     - SPARK_SSL_ENABLED=no
-  #   volumes:
-  #     - ./spark/app:/spark/app # Spark scripts folder (Must be the same path in airflow and Spark Cluster)
-  #     - ./spark/resources:/spark/resources #Resources folder (Must be the same path in airflow and Spark Cluster)
-  #   ports:
-  #     - "8181:8080"
-  #     - "7077:7077"
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        mkdir -p /sources/logs /sources/dags /sources/plugins
+        chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
+        exec /entrypoint airflow version
+    networks: 
+      - default_net
+      
+  spark:
+    image: bitnami/spark:3.3
+    # image: spark:3.5.0-scala2.12-java11-python3-ubuntu
+    container_name: spark
+    user: root # Run container as root container: https://docs.bitnami.com/tutorials/work-with-non-root-containers/
+    hostname: spark
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    volumes:
+      - ./spark/app:/spark/app # Spark scripts folder (Must be the same path in airflow and Spark Cluster)
+      - ./spark/resources:/spark/resources #Resources folder (Must be the same path in airflow and Spark Cluster)
+      # - ./spark/app:/data-lake-house/spark/app # Spark scripts folder (Must be the same path in airflow and Spark Cluster)
+      # - ./spark/resources:/data-lake-house/spark/resources #Resources folder (Must be the same path in airflow and Spark Cluster)
+    ports:
+      - "8181:8080"
+      - "7077:7077"
+    networks: 
+      - default_net
   # spark-worker:
   #   image: bitnami/spark:3.3
   #   # image: spark:3.5.0-scala2.12-java11-python3-ubuntu    
@@ -145,3 +170,6 @@ services:
 volumes:
   postgres_data:
   minio: {}
+
+networks:
+    default_net:

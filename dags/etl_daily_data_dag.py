@@ -4,10 +4,10 @@ from datetime import datetime
 from airflow.operators.python import PythonOperator
 
 def extract_daily():
-        from src.modules.service import extract_stock_data
-        from src.config.period import PERIOD_TYPE 
-        extract_stock_data(period_type=PERIOD_TYPE.TODAY,exact_date=datetime.today().date())
-        # extract_stock_data(period_type=PERIOD_TYPE.PERIOD,from_date=datetime(2022,12,1),to_date=datetime(2022,12,31))
+    from src.modules.service import extract_stock_data
+    from src.config.period import PERIOD_TYPE 
+    # extract_stock_data(period_type=PERIOD_TYPE.TODAY,extract=datetime.today().date())
+    extract_stock_data(period_type=PERIOD_TYPE.PERIOD,from_date=datetime(2024,9,23),to_date=datetime(2024,9,23))
 
 default_args ={
     'owner': 'Khanh - Lam Quoc'

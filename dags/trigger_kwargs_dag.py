@@ -4,7 +4,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 
 #Define DAG
-dag = DAG("test_backup", schedule_interval=None, start_date=days_ago(1))
+dag = DAG("test_dag", schedule_interval=None, start_date=days_ago(1))
 
 #Parameter
 owner="{{ dag_run.conf['owner'] }}"
