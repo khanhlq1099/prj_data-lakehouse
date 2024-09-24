@@ -20,13 +20,6 @@ x-airflow-common: &airflow-common
     - ./src:/opt/airflow/src
     - ./spark/app:/spark/app # Spark scripts folder (Must be the same path in airflow and Spark Cluster)
     - ./spark/resources:/spark/resources #Resources folder (Must be the same path in airflow and Spark Cluster)
-    # - ./dags:/data-lake-house/dags
-    # - ./logs:/data-lake-house/logs
-    # - ./config:/opt/airflow/config
-    # - ./plugins:/data-lake-house/plugins
-    # - ./src:/opt/airflow/src
-    # - ./spark/app:/opt/airflow/spark/app # Spark scripts folder (Must be the same path in airflow and Spark Cluster)
-    # - ./spark/resources:/opt/airflow/spark/resources #Resources folder (Must be the same path in airflow and Spark Cluster)
   user: "${AIRFLOW_UID}:0"
   env_file:
     - .env
@@ -130,42 +123,11 @@ services:
     volumes:
       - ./spark/app:/spark/app # Spark scripts folder (Must be the same path in airflow and Spark Cluster)
       - ./spark/resources:/spark/resources #Resources folder (Must be the same path in airflow and Spark Cluster)
-      # - ./spark/app:/data-lake-house/spark/app # Spark scripts folder (Must be the same path in airflow and Spark Cluster)
-      # - ./spark/resources:/data-lake-house/spark/resources #Resources folder (Must be the same path in airflow and Spark Cluster)
     ports:
       - "8181:8080"
       - "7077:7077"
     networks: 
       - default_net
-  # spark-worker:
-  #   image: bitnami/spark:3.3
-  #   # image: spark:3.5.0-scala2.12-java11-python3-ubuntu    
-  #   container_name: spark-worker-1
-  #   hostname: spark-worker-1
-  #   ports:
-  #     - "8182:8081"    # Worker Web UI port
-  #   environment:
-  #     - SPARK_MODE=worker
-  #     - SPARK_MASTER_URL=spark://spark:7077
-  #     - SPARK_WORKER_MEMORY=1G
-  #     - SPARK_LOG_LEVEL=WARN
-  #   depends_on:
-  #     - spark
-
-  # spark-worker-2:
-  #   image: bitnami/spark:3.3    
-  #   # image: spark:3.5.0-scala2.12-java11-python3-ubuntu
-  #   container_name: spark-worker-2
-  #   hostname: spark-worker-2
-  #   ports:
-  #     - "8183:8081"    # Worker Web UI port (map to a different external port)
-  #   environment:
-  #     - SPARK_MODE=worker
-  #     - SPARK_MASTER_URL=spark://spark:7077
-  #     - SPARK_WORKER_MEMORY=1G
-  #     - SPARK_LOG_LEVEL=WARN
-  #   depends_on:
-  #     - spark
 
 volumes:
   postgres_data:
