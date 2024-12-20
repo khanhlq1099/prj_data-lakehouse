@@ -1,6 +1,5 @@
-FROM apache/airflow:2.7.1
+FROM apache/airflow:2.7.1-python3.10
 USER root
-# FROM python:3.10
 
 # Install OpenJDK-11
 RUN apt update && \
@@ -17,4 +16,4 @@ USER airflow
 COPY . /data-lake-house
 WORKDIR /data-lake-house
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt

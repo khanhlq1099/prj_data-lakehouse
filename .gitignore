@@ -72,3 +72,4 @@ minio
 plugins
 utils/
 .DS_Store
+spark/resources
